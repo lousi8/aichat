@@ -1,0 +1,59 @@
+import * as React from 'react';
+
+import type { SxProps } from '@mui/joy/styles/types';
+import { IconButton } from '@mui/joy';
+
+import { DebouncedInputMemo } from '~/common/components/DebouncedInput';
+import { StarredState } from '~/common/components/StarIcons';
+
+
+const _styles = {
+  filterBox: {
+    m: 1.5,
+    mb: 1,
+    backgroundColor: 'background.level1',
+    '&:focus-within': { backgroundColor: 'background.popup' },
+  },
+} as const satisfies Record<string, SxProps>;
+
+
+/**
+ * Model Selection Dropdowns: Shared search input with starred filter toggle
+ */
+export const LLMSearchFilterInput = React.memo(function LLMSearchFilterInput(props: {
+  size?: 'sm' | 'md' | 'lg',
+  llmsCount: number,
+  onSearch: (search: string | null) => void,
+  onStarredToggle?: () => void, // if provided, shows the starred filter button
+  showStarredOnly?: boolean,
+}) {
+
+  // reset the search on unmount (e.g. dropdown closed while typed) - the input restarts empty, so the filter must too
+  const { onSearch, onStarredToggle, showStarredOnly } = props;
+  React.useEffect(() => () => onSearch(null), [onSearch]);
+
+  // stable element, so the memoized input holds across our re-renders
+  const starredDecorator = React.useMemo(() => !onStarredToggle ? undefined : (
+    <IconButton
+      size='sm'
+      variant='plain'
+      aria-label='Filter starred models'
+      onClick={onStarredToggle}
+    >
+      <StarredState isStarred={!!showStarredOnly} />
+      {/*<StarIconUnstyled isStarred={showStarredOnly} />*/}
+    </IconButton>
+  ), [onStarredToggle, showStarredOnly]);
+
+  return (
+    <DebouncedInputMemo
+      size={props.size}
+      retainFocus
+      debounceTimeout={300}
+      onDebounce={props.onSearch}
+      placeholder={`Search ${props.llmsCount} models...`}
+      startDecorator={starredDecorator}
+      sx={_styles.filterBox}
+    />
+  );
+});
